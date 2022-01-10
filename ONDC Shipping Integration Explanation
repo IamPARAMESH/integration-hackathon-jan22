@@ -1,0 +1,73 @@
+We from Commerce and Inventory teams took part in this ONDC hackathon. We tried to build an application in Logistics Buyer Category (Inventory) and Retail Seller Category(Commerce) using ONDC APIs. We will share the valuable learnings that we had over the past two days here.
+
+What is ONDC?
+
+ONDC is Open Network Digital Commerce is an initiative by our government to Digitize the experience of buyers and sellers using a network of connected e-commerce platforms. Using ONDC Sellers will be able to take their product/service to a huge number of customers and buyers will get multiple merchant options. ONDC is more or less similar to what "UPI" is for Online Payments.
+In simple terms, ONDC is analagous to apps like flipkart/amazon, but powered by Government.
+
+ONDC Retail App :
+ONDC maintains a registry of buyer seller apps. Sellers register their app to ONDC.
+When a buyer searches for a product/service, ONDC will broadcast the search to all registered sellers. Seller response back to ONDC network with matching catalog (if any) and ONDC will give the result to buyer. Buyer can choose the seller and place the order from that seller.
+
+
+
+
+ONDC Logistics Buyer App :
+ONDC Maintains a registry of Logistics providers. When a merchant wants to ship his order to seller, Merchant provides order data and location details to ONDC. ONDC will broadcast this request to multiple logistics providers and gives the best matching responses to Seller. Seller can choose one of the logistics providers and proceed with shipment.
+
+
+
+
+What we did?
+We registered in multiple categories for hackathon and decided to build Inventory - ONDC Integration under Logistics Buyer app category and Commerce - ONDC Integration under Retail Seller App category.
+Apart from this we have also registered an application showing a demo of our Inventory package geometry.
+
+How we planned the process?
+
+With the limited resources available and such a short span of time, planning was the key for the entire process.
+We had no idea about their APIs earlier, and the first thing was to analyse and be clear on what we are going to do. Even before starting the work, we had a clear idea on 'who' will work on 'which' part of the solution?
+
+We were able to segregate the work items into multiple parts like Inventory Client, Inventory Client - Server Communication, Inventory Server - ONDC Server Communication, ONDC Asynchronous Request, Retail App Specific changes and each one of us started working in one part so that we were mostly independent of each other and able to work in parallel.
+
+Technical Challenges :
+
+I) Making Asynchronous calls synchronous:
+
+All ONDC APIs are Asynchronous. i.e., If we hit "Search" API to ONDC Logistics, We won't get response in same API. Instead they give acknowledge our request and we get a asynchronous call back from them as "On_search" within next few seconds.
+So how can we seamlessly show the response to customer in the Inventory Client? The First thing was trying to break the asynchronous mode into synchronous. For example lets take "Search" process.
+-> From Inventory client, inventory server will receive search request
+-> Inventory Server will call ONDC with the search request
+-> Now we made the same thread(1) to wait (Thread.sleep()) until we receive the asynchronous call back from ONDC
+-> While the thread (1) was waiting, we will parallelly receive ON_SEARCH Response from ONDC in a separate API Thread (2)
+
+
+
+II) Data storage:
+
+Now... How will you communicate data from Thread 2 to Thread 1 and complete it's wait time? Remember it's a one day hackathon and we cannot run a migration to store this data or use DB to store the search response and query that data from Thread 1. What was the simplest of solutions that we had? Static MAP!!! Instead of permanent storage (which was not needed at all) we decided to store the data in a static map and read that map from thread 2. Once the Map is filled with for the passed transaction ID (Key), it means, we received a call back from ONDC and we will read that response and give it to inventory client from Thread 1 and remove data from the Map.
+
+
+Okay.. Can you solve everything using a static map? What will you do if you need a data that needs to persisted permanently? For example, we will place an order to the logistics and logistics in response will give us an Order ID as reference number, in future, if we want to track the status of that order, we need that order ID to be stored in our side. So what can we do now? This is where "Customization" features of our application became a saviour for us! We used Custom Fields features extensively like storing GPS Locations of Buyer, Seller, Logistics Order ID wherever we needed data storage.
+
+
+
+III) Web Server environment:
+
+Choosing the environment in which we run the code was another challenge. We initially thought of running the demo in PRE. But for every change/for every fix generating and moving a build to PRE was not easy! In the end, since, all we needed was to share them a demo video of the working model, we decided to use dev/local environment itself.
+
+Key Takeaways from the hackathon were :
+- Split the work independently so we can work in non-blocking mode.
+- Define JAVA method contract between team.
+- Have a backup plan
+- Fail fast
+- If you have limited time "do not do new experiments / do not take any new technology"
+- If you are struck at any place don't hesitate to get help from team
+- Hardcode data wherever possible
+- Involve some more people and work on back up plans parallel. So if one plan is failed other might help.
+- Take shortcuts ( ex. choosing static map instead of database)
+
+In the provided deadline, we were able to submit 2 of our solutions. Kudos to all the d
+Inventory package geometry - video link https://drive.google.com/file/d/1aSiKgDYoq8zL3hA8ZkdiscMM_JsDTNqM/view?usp=sharing
+by @Swarna Latchumi Kadiravan @Mohanraj K @Vignesh Krishnan
+Zoho Inventory as Logistics Buyer App in ONDC Network - video link https://workdrive.zohoexternal.com/external/8be5d50e85cd0d70751889aa34a57a3d0282d5c41d884223db585db9bdfe501d
+by @Sowmya T S @Sharavana Prasad T @Parameshwaran  S @Kabilasudhan N @Subramani Hariharan
